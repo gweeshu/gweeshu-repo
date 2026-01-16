@@ -11,56 +11,187 @@
         <!-- Header -->
         <header>
             <h1>Medical Study App</h1>
-            <button id="uploadBtn" class="btn-primary">Upload Documents</button>
+            <button id="addCourseBtn" class="btn-primary">+ Add Course</button>
         </header>
 
         <!-- Main Content -->
         <div class="main-content">
-            <!-- Sidebar with subjects -->
+            <!-- Sidebar with courses -->
             <aside class="sidebar">
-                <h2>Subjects</h2>
-                <div id="subjectsList"></div>
-                <button id="refreshBtn" class="btn-secondary">Refresh</button>
+                <h2>Courses</h2>
+                <div id="coursesList"></div>
             </aside>
 
             <!-- Content area -->
             <main class="content">
+                <!-- Welcome Screen -->
                 <div id="welcomeScreen" class="welcome">
                     <h2>Welcome to Your Medical Study App</h2>
-                    <p>Upload your lecture materials to get started.</p>
-                    <p>The app will automatically organize them by subject and track your progress through 3 study passes:</p>
-                    <ul>
-                        <li><strong>Pass 1:</strong> Broad overview of main concepts</li>
-                        <li><strong>Pass 2:</strong> Detailed understanding with mechanisms</li>
-                        <li><strong>Pass 3:</strong> Granular, exam-ready knowledge</li>
-                    </ul>
+                    <p>Get started by creating your first course.</p>
+
+                    <div class="workflow-guide">
+                        <h3>How it works:</h3>
+                        <ol>
+                            <li><strong>Create Courses</strong> - Organize by subject (Anatomy, Physiology, etc.)</li>
+                            <li><strong>Add Lectures</strong> - Create individual lecture topics</li>
+                            <li><strong>Upload Materials</strong> - Add multiple PDFs, PowerPoints, Word docs per lecture</li>
+                            <li><strong>Study in Passes</strong>:
+                                <ul>
+                                    <li><strong>Pass 1:</strong> Broad overview of concepts</li>
+                                    <li><strong>Pass 2:</strong> Detailed understanding</li>
+                                    <li><strong>Pass 3:</strong> Granular, exam-ready mastery</li>
+                                </ul>
+                            </li>
+                        </ol>
+                    </div>
                 </div>
 
+                <!-- Lectures View -->
                 <div id="lecturesView" class="hidden">
-                    <div class="subject-header">
-                        <h2 id="currentSubject"></h2>
+                    <div class="course-header">
+                        <div>
+                            <button id="backToCoursesBtn" class="btn-secondary-small">← Courses</button>
+                            <h2 id="currentCourseName"></h2>
+                            <p id="currentCourseDesc" class="course-desc"></p>
+                        </div>
+                        <button id="addLectureBtn" class="btn-success">+ Add Lecture</button>
                     </div>
                     <div id="lecturesList"></div>
                 </div>
 
-                <div id="studyView" class="hidden">
-                    <div class="study-header">
-                        <button id="backBtn" class="btn-secondary">← Back</button>
-                        <h2 id="studyTitle"></h2>
-                        <div class="pass-selector">
-                            <button class="pass-btn" data-pass="1">Pass 1</button>
-                            <button class="pass-btn" data-pass="2">Pass 2</button>
-                            <button class="pass-btn" data-pass="3">Pass 3</button>
+                <!-- Lecture Detail View -->
+                <div id="lectureDetailView" class="hidden">
+                    <div class="lecture-detail-header">
+                        <button id="backToLecturesBtn" class="btn-secondary-small">← Back</button>
+                        <div class="lecture-title-section">
+                            <h2 id="lectureDetailTitle"></h2>
+                            <p id="lectureDetailDesc" class="lecture-desc"></p>
                         </div>
                     </div>
-                    <div id="summaryContent" class="summary-content">
-                        <div class="loading">Loading summary...</div>
+
+                    <!-- Documents Section -->
+                    <div class="documents-section">
+                        <div class="section-header">
+                            <h3>Materials</h3>
+                            <button id="uploadDocsBtn" class="btn-primary-small">+ Upload Documents</button>
+                        </div>
+                        <div id="documentsList" class="documents-grid"></div>
                     </div>
+
+                    <!-- Study Section -->
+                    <div class="study-section">
+                        <h3>Study This Lecture</h3>
+                        <div class="pass-cards">
+                            <div class="pass-card" data-pass="1">
+                                <div class="pass-number">Pass 1</div>
+                                <div class="pass-title">Broad Overview</div>
+                                <div class="pass-desc">Main topics and key concepts</div>
+                                <button class="study-btn" data-pass="1">Study Pass 1</button>
+                                <div class="pass-status"></div>
+                            </div>
+                            <div class="pass-card" data-pass="2">
+                                <div class="pass-number">Pass 2</div>
+                                <div class="pass-title">Detailed Study</div>
+                                <div class="pass-desc">Mechanisms and relationships</div>
+                                <button class="study-btn" data-pass="2">Study Pass 2</button>
+                                <div class="pass-status"></div>
+                            </div>
+                            <div class="pass-card" data-pass="3">
+                                <div class="pass-number">Pass 3</div>
+                                <div class="pass-title">Exam Mastery</div>
+                                <div class="pass-desc">Comprehensive details</div>
+                                <button class="study-btn" data-pass="3">Study Pass 3</button>
+                                <div class="pass-status"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Study View -->
+                <div id="studyView" class="hidden">
+                    <div class="study-header">
+                        <button id="backFromStudyBtn" class="btn-secondary-small">← Back</button>
+                        <div class="study-title-section">
+                            <h2 id="studyTitle"></h2>
+                            <div class="pass-indicator">
+                                <span class="pass-badge" id="currentPassBadge">Pass 1</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Summary Content -->
+                    <div class="summary-container">
+                        <div id="summaryContent" class="summary-content">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Generating summary with Claude...</p>
+                            </div>
+                        </div>
+
+                        <!-- Images Gallery -->
+                        <div id="imagesGallery" class="images-gallery hidden">
+                            <h3>Images from Materials</h3>
+                            <div id="imagesGrid" class="images-grid"></div>
+                        </div>
+                    </div>
+
                     <div class="study-footer">
-                        <button id="completeBtn" class="btn-success">Mark Pass Complete</button>
+                        <button id="completePassBtn" class="btn-success-large">Mark Pass Complete ✓</button>
                     </div>
                 </div>
             </main>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="modalOverlay" class="modal-overlay hidden">
+        <!-- Add Course Modal -->
+        <div id="addCourseModal" class="modal hidden">
+            <div class="modal-header">
+                <h3>Add New Course</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <label>Course Name *</label>
+                <input type="text" id="courseNameInput" placeholder="e.g., Anatomy, Physiology">
+
+                <label>Description (optional)</label>
+                <textarea id="courseDescInput" placeholder="Brief description of this course"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelCourseBtn">Cancel</button>
+                <button class="btn-primary" id="saveCourseBtn">Create Course</button>
+            </div>
+        </div>
+
+        <!-- Add Lecture Modal -->
+        <div id="addLectureModal" class="modal hidden">
+            <div class="modal-header">
+                <h3>Add New Lecture</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <label>Lecture Title *</label>
+                <input type="text" id="lectureNameInput" placeholder="e.g., Brainstem Anatomy">
+
+                <label>Description (optional)</label>
+                <textarea id="lectureDescInput" placeholder="Brief description of this lecture"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelLectureBtn">Cancel</button>
+                <button class="btn-primary" id="saveLectureBtn">Create Lecture</button>
+            </div>
+        </div>
+
+        <!-- Image Lightbox -->
+        <div id="imageLightbox" class="modal modal-large hidden">
+            <div class="modal-header">
+                <h3 id="lightboxTitle">Image</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body modal-body-image">
+                <img id="lightboxImage" src="" alt="Full size image">
+            </div>
         </div>
     </div>
 
