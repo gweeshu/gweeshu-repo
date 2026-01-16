@@ -64,7 +64,7 @@ Be specific with the subject name. Common medical school subjects include:
             # Fallback parsing
             return {"subject": "Uncategorized", "title": filename}
 
-    def generate_summary(self, text: str, pass_number: int, title: str) -> str:
+    def generate_summary(self, text: str, pass_number: int, title: str, image_count: int = 0) -> str:
         """
         Generate a summary for a specific pass level.
         Pass 1: Broad overview (key concepts only)
@@ -76,14 +76,14 @@ Be specific with the subject name. Common medical school subjects include:
 - Focus only on the main topics and key concepts
 - Use bullet points and clear headers
 - Keep it high-level (like a table of contents with brief descriptions)
-- Aim for 200-400 words
+- Aim for 300-500 words
 - Help the student understand "what" is covered, not the details""",
             2: """Create a DETAILED SUMMARY suitable for Pass 2 study:
 - Include important details, mechanisms, and relationships
 - Organize by topic with clear subsections
 - Include key terms, definitions, and concepts
 - Add important examples and clinical relevance
-- Aim for 500-1000 words
+- Aim for 800-1200 words
 - Help the student understand "how" and "why" things work""",
             3: """Create a COMPREHENSIVE, GRANULAR summary suitable for Pass 3 study:
 - Include all important details, mechanisms, pathways
@@ -91,22 +91,34 @@ Be specific with the subject name. Common medical school subjects include:
 - Include specific numbers, values, classifications
 - Add mnemonics, memory aids, and study tips
 - Be thorough and exam-focused
-- Aim for 1000-2000 words
+- Aim for 1500-2500 words
 - Help the student master all testable material"""
         }
 
-        prompt = f"""You are a medical education expert. Create a summary of this lecture: "{title}"
+        image_note = ""
+        if image_count > 0:
+            image_note = f"\n\nNote: This lecture has {image_count} images extracted from the source materials. Reference relevant diagrams and images when appropriate using placeholders like '[See Image: description]'."
 
-{pass_instructions.get(pass_number, pass_instructions[1])}
+        prompt = f"""You are a medical education expert. Create a summary collating information from multiple source documents for this lecture: "{title}"
 
-Document content:
-{text[:15000]}  # Using first 15k chars to stay within limits
+{pass_instructions.get(pass_number, pass_instructions[1])}{image_note}
 
-Format your response in clean markdown with headers, bullet points, and emphasis where appropriate."""
+Content from all source documents:
+{text[:50000]}
+
+Format your response in clean, well-structured markdown:
+- Use ## for main sections
+- Use ### for subsections
+- Use **bold** for key terms and important concepts
+- Use bullet points and numbered lists for clarity
+- Use tables when comparing information
+- Add horizontal rules (---) to separate major sections
+
+Make the summary comprehensive by integrating information from all source documents."""
 
         response = self.client.messages.create(
             model=self.model,
-            max_tokens=4000,
+            max_tokens=8000,
             messages=[{"role": "user", "content": prompt}]
         )
 

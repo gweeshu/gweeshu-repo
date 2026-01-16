@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey, Boolean
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey, Boolean, LargeBinary
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
@@ -6,29 +6,58 @@ import os
 
 Base = declarative_base()
 
-class Subject(Base):
-    __tablename__ = "subjects"
+class Course(Base):
+    """Courses are manually created by the user (e.g., Anatomy, Physiology)"""
+    __tablename__ = "courses"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, nullable=False)
+    name = Column(String, nullable=False)
     description = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    lectures = relationship("Lecture", back_populates="subject", cascade="all, delete-orphan")
+    lectures = relationship("Lecture", back_populates="course", cascade="all, delete-orphan")
 
 class Lecture(Base):
+    """Lectures are manually created under courses (e.g., 'Brainstem Anatomy')"""
     __tablename__ = "lectures"
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
-    subject_id = Column(Integer, ForeignKey("subjects.id"), nullable=False)
-    original_filename = Column(String, nullable=False)
-    file_path = Column(String, nullable=False)
+    course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
+    description = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    subject = relationship("Subject", back_populates="lectures")
+    course = relationship("Course", back_populates="lectures")
+    documents = relationship("Document", back_populates="lecture", cascade="all, delete-orphan")
     summaries = relationship("Summary", back_populates="lecture", cascade="all, delete-orphan")
     progress = relationship("Progress", back_populates="lecture", cascade="all, delete-orphan")
+
+class Document(Base):
+    """Documents uploaded for a specific lecture (multiple per lecture)"""
+    __tablename__ = "documents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    lecture_id = Column(Integer, ForeignKey("lectures.id"), nullable=False)
+    filename = Column(String, nullable=False)
+    file_path = Column(String, nullable=False)
+    file_type = Column(String, nullable=False)  # pdf, pptx, docx
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    lecture = relationship("Lecture", back_populates="documents")
+    images = relationship("Image", back_populates="document", cascade="all, delete-orphan")
+
+class Image(Base):
+    """Images extracted from documents"""
+    __tablename__ = "images"
+
+    id = Column(Integer, primary_key=True, index=True)
+    document_id = Column(Integer, ForeignKey("documents.id"), nullable=False)
+    filename = Column(String, nullable=False)
+    file_path = Column(String, nullable=False)
+    page_number = Column(Integer)  # Which page/slide it came from
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    document = relationship("Document", back_populates="images")
 
 class Summary(Base):
     __tablename__ = "summaries"

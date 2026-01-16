@@ -1,107 +1,230 @@
 import os
 import shutil
-from typing import List
-from models.database import get_session, Subject, Lecture, Summary, Progress
+from typing import List, Optional
+from models.database import get_session, Course, Lecture, Document, Image, Summary, Progress
 from utils.document_parser import DocumentParser
+from utils.image_extractor import ImageExtractor
 from services.claude_service import ClaudeService
 
 class DocumentService:
     def __init__(self):
         self.claude = ClaudeService()
         self.parser = DocumentParser()
+        self.image_extractor = ImageExtractor()
         self.upload_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "data", "uploads"))
+        self.images_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "data", "images"))
         os.makedirs(self.upload_dir, exist_ok=True)
+        os.makedirs(self.images_dir, exist_ok=True)
 
-    def process_documents(self, file_paths: List[str]) -> dict:
-        """
-        Process multiple documents: parse, classify, and store in database.
-        Returns summary of what was processed.
-        """
+    # Course Management
+    def create_course(self, name: str, description: Optional[str] = None) -> dict:
+        """Create a new course."""
         session = get_session()
-        results = {
-            "processed": 0,
-            "failed": 0,
-            "subjects_created": [],
-            "lectures_created": []
-        }
-
         try:
-            # Parse all documents
-            parsed_docs = []
-            for file_path in file_paths:
-                try:
-                    text = self.parser.parse_document(file_path)
-                    filename = os.path.basename(file_path)
-                    parsed_docs.append({
-                        "filename": filename,
-                        "text": text,
-                        "original_path": file_path
-                    })
-                except Exception as e:
-                    print(f"Failed to parse {file_path}: {str(e)}")
-                    results["failed"] += 1
+            course = Course(name=name, description=description)
+            session.add(course)
+            session.commit()
+            session.refresh(course)
 
-            # Classify documents with Claude
-            classifications = self.claude.batch_classify_documents(parsed_docs)
-
-            # Store in database
-            for i, classification in enumerate(classifications):
-                try:
-                    doc = parsed_docs[i]
-
-                    # Get or create subject
-                    subject = session.query(Subject).filter_by(name=classification["subject"]).first()
-                    if not subject:
-                        subject = Subject(name=classification["subject"])
-                        session.add(subject)
-                        session.commit()
-                        results["subjects_created"].append(classification["subject"])
-
-                    # Copy file to uploads directory
-                    new_filename = f"{subject.id}_{len(subject.lectures) + 1}_{doc['filename']}"
-                    new_path = os.path.join(self.upload_dir, new_filename)
-                    shutil.copy2(doc["original_path"], new_path)
-
-                    # Create lecture
-                    lecture = Lecture(
-                        title=classification["title"],
-                        subject_id=subject.id,
-                        original_filename=doc["filename"],
-                        file_path=new_path
-                    )
-                    session.add(lecture)
-                    session.commit()
-
-                    # Create progress entries for 3 passes
-                    for pass_num in [1, 2, 3]:
-                        progress = Progress(
-                            lecture_id=lecture.id,
-                            pass_number=pass_num,
-                            completed=False
-                        )
-                        session.add(progress)
-
-                    session.commit()
-                    results["processed"] += 1
-                    results["lectures_created"].append({
-                        "subject": classification["subject"],
-                        "title": classification["title"]
-                    })
-
-                except Exception as e:
-                    print(f"Failed to store {classification['filename']}: {str(e)}")
-                    session.rollback()
-                    results["failed"] += 1
-
+            return {
+                "id": course.id,
+                "name": course.name,
+                "description": course.description,
+                "created_at": course.created_at.isoformat()
+            }
         finally:
             session.close()
 
-        return results
+    def get_all_courses(self) -> List[dict]:
+        """Get all courses with their lectures."""
+        session = get_session()
+        try:
+            courses = session.query(Course).all()
+            result = []
 
-    def generate_summary_for_lecture(self, lecture_id: int, pass_number: int) -> str:
+            for course in courses:
+                lectures = []
+                for lecture in course.lectures:
+                    # Count documents
+                    doc_count = len(lecture.documents)
+
+                    # Get progress
+                    progress_data = []
+                    for progress in lecture.progress:
+                        progress_data.append({
+                            "pass_number": progress.pass_number,
+                            "completed": progress.completed,
+                            "completed_at": progress.completed_at.isoformat() if progress.completed_at else None
+                        })
+
+                    lectures.append({
+                        "id": lecture.id,
+                        "title": lecture.title,
+                        "description": lecture.description,
+                        "document_count": doc_count,
+                        "progress": sorted(progress_data, key=lambda x: x["pass_number"])
+                    })
+
+                result.append({
+                    "id": course.id,
+                    "name": course.name,
+                    "description": course.description,
+                    "lectures": lectures
+                })
+
+            return result
+        finally:
+            session.close()
+
+    def delete_course(self, course_id: int) -> bool:
+        """Delete a course and all its lectures."""
+        session = get_session()
+        try:
+            course = session.query(Course).filter_by(id=course_id).first()
+            if course:
+                session.delete(course)
+                session.commit()
+                return True
+            return False
+        finally:
+            session.close()
+
+    # Lecture Management
+    def create_lecture(self, course_id: int, title: str, description: Optional[str] = None) -> dict:
+        """Create a new lecture under a course."""
+        session = get_session()
+        try:
+            # Verify course exists
+            course = session.query(Course).filter_by(id=course_id).first()
+            if not course:
+                raise ValueError(f"Course {course_id} not found")
+
+            lecture = Lecture(
+                title=title,
+                course_id=course_id,
+                description=description
+            )
+            session.add(lecture)
+            session.commit()
+
+            # Create progress entries for 3 passes
+            for pass_num in [1, 2, 3]:
+                progress = Progress(
+                    lecture_id=lecture.id,
+                    pass_number=pass_num,
+                    completed=False
+                )
+                session.add(progress)
+
+            session.commit()
+            session.refresh(lecture)
+
+            return {
+                "id": lecture.id,
+                "title": lecture.title,
+                "description": lecture.description,
+                "course_id": lecture.course_id,
+                "created_at": lecture.created_at.isoformat()
+            }
+        finally:
+            session.close()
+
+    def delete_lecture(self, lecture_id: int) -> bool:
+        """Delete a lecture and all its documents."""
+        session = get_session()
+        try:
+            lecture = session.query(Lecture).filter_by(id=lecture_id).first()
+            if lecture:
+                session.delete(lecture)
+                session.commit()
+                return True
+            return False
+        finally:
+            session.close()
+
+    # Document Management
+    def upload_document(self, lecture_id: int, file_path: str, filename: str) -> dict:
+        """Upload a document for a specific lecture."""
+        session = get_session()
+        try:
+            # Verify lecture exists
+            lecture = session.query(Lecture).filter_by(id=lecture_id).first()
+            if not lecture:
+                raise ValueError(f"Lecture {lecture_id} not found")
+
+            # Determine file type
+            ext = os.path.splitext(filename)[1].lower()
+            file_type = ext[1:]  # Remove the dot
+
+            # Copy file to uploads directory
+            new_filename = f"lecture_{lecture_id}_{len(lecture.documents) + 1}_{filename}"
+            new_path = os.path.join(self.upload_dir, new_filename)
+            shutil.copy2(file_path, new_path)
+
+            # Create document record
+            document = Document(
+                lecture_id=lecture_id,
+                filename=filename,
+                file_path=new_path,
+                file_type=file_type
+            )
+            session.add(document)
+            session.commit()
+            session.refresh(document)
+
+            # Extract images from document
+            image_output_dir = os.path.join(self.images_dir, f"lecture_{lecture_id}", f"doc_{document.id}")
+            extracted_images = self.image_extractor.extract_images(new_path, image_output_dir)
+
+            # Store image records
+            for img_path, page_num in extracted_images:
+                img_filename = os.path.basename(img_path)
+                image = Image(
+                    document_id=document.id,
+                    filename=img_filename,
+                    file_path=img_path,
+                    page_number=page_num
+                )
+                session.add(image)
+
+            session.commit()
+
+            return {
+                "id": document.id,
+                "filename": document.filename,
+                "file_type": document.file_type,
+                "images_extracted": len(extracted_images)
+            }
+        finally:
+            session.close()
+
+    def get_lecture_documents(self, lecture_id: int) -> List[dict]:
+        """Get all documents for a lecture."""
+        session = get_session()
+        try:
+            lecture = session.query(Lecture).filter_by(id=lecture_id).first()
+            if not lecture:
+                return []
+
+            result = []
+            for doc in lecture.documents:
+                result.append({
+                    "id": doc.id,
+                    "filename": doc.filename,
+                    "file_type": doc.file_type,
+                    "image_count": len(doc.images),
+                    "created_at": doc.created_at.isoformat()
+                })
+
+            return result
+        finally:
+            session.close()
+
+    # Summary Generation
+    def generate_summary_for_lecture(self, lecture_id: int, pass_number: int) -> dict:
         """
-        Generate a summary for a specific lecture and pass.
-        Caches the result in the database.
+        Generate a summary for a lecture by collating all its documents.
+        Returns the summary content and associated images.
         """
         session = get_session()
         try:
@@ -112,18 +235,60 @@ class DocumentService:
             ).first()
 
             if existing:
-                return existing.content
+                # Get images for this lecture
+                lecture = session.query(Lecture).filter_by(id=lecture_id).first()
+                images = []
+                for doc in lecture.documents:
+                    for img in doc.images:
+                        images.append({
+                            "filename": img.filename,
+                            "path": img.file_path,
+                            "page_number": img.page_number,
+                            "document": doc.filename
+                        })
 
-            # Get lecture
+                return {
+                    "content": existing.content,
+                    "images": images
+                }
+
+            # Get lecture and all its documents
             lecture = session.query(Lecture).filter_by(id=lecture_id).first()
             if not lecture:
                 raise ValueError(f"Lecture {lecture_id} not found")
 
-            # Parse document
-            text = self.parser.parse_document(lecture.file_path)
+            if not lecture.documents:
+                raise ValueError(f"No documents uploaded for lecture {lecture_id}")
+
+            # Parse all documents
+            all_text = []
+            all_images = []
+
+            for doc in lecture.documents:
+                try:
+                    text = self.parser.parse_document(doc.file_path)
+                    all_text.append(f"\n\n=== From: {doc.filename} ===\n\n{text}")
+
+                    # Collect images
+                    for img in doc.images:
+                        all_images.append({
+                            "filename": img.filename,
+                            "path": img.file_path,
+                            "page_number": img.page_number,
+                            "document": doc.filename
+                        })
+                except Exception as e:
+                    print(f"Error parsing document {doc.filename}: {e}")
+
+            combined_text = "\n".join(all_text)
 
             # Generate summary with Claude
-            summary_content = self.claude.generate_summary(text, pass_number, lecture.title)
+            summary_content = self.claude.generate_summary(
+                combined_text,
+                pass_number,
+                lecture.title,
+                len(all_images)
+            )
 
             # Store summary
             summary = Summary(
@@ -134,7 +299,10 @@ class DocumentService:
             session.add(summary)
             session.commit()
 
-            return summary_content
+            return {
+                "content": summary_content,
+                "images": all_images
+            }
 
         finally:
             session.close()
@@ -155,41 +323,5 @@ class DocumentService:
                 session.commit()
                 return True
             return False
-        finally:
-            session.close()
-
-    def get_all_subjects(self) -> List[dict]:
-        """Get all subjects with their lectures and progress."""
-        session = get_session()
-        try:
-            subjects = session.query(Subject).all()
-            result = []
-
-            for subject in subjects:
-                lectures = []
-                for lecture in subject.lectures:
-                    progress_data = []
-                    for progress in lecture.progress:
-                        progress_data.append({
-                            "pass_number": progress.pass_number,
-                            "completed": progress.completed,
-                            "completed_at": progress.completed_at.isoformat() if progress.completed_at else None
-                        })
-
-                    lectures.append({
-                        "id": lecture.id,
-                        "title": lecture.title,
-                        "filename": lecture.original_filename,
-                        "progress": sorted(progress_data, key=lambda x: x["pass_number"])
-                    })
-
-                result.append({
-                    "id": subject.id,
-                    "name": subject.name,
-                    "description": subject.description,
-                    "lectures": lectures
-                })
-
-            return result
         finally:
             session.close()
