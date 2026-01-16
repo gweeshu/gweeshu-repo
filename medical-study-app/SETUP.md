@@ -10,9 +10,15 @@
 
 ## Step 2: Install Python Dependencies
 
+**Important**: Python 3.11 or 3.12 recommended for best compatibility. Python 3.13 may have issues.
+
 ```bash
 cd medical-study-app/backend
-python -m venv venv
+
+# Create virtual environment with Python 3.11 or 3.12 (recommended)
+python3.11 -m venv venv
+# or: python3.12 -m venv venv
+# or if you only have python3: python3 -m venv venv
 
 # On macOS/Linux:
 source venv/bin/activate
@@ -20,8 +26,14 @@ source venv/bin/activate
 # On Windows:
 venv\Scripts\activate
 
+# Upgrade pip first (important!)
+pip install --upgrade pip setuptools wheel
+
+# Install dependencies
 pip install -r requirements.txt
 ```
+
+**If you get errors**, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for solutions.
 
 ## Step 3: Configure API Key
 
