@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Study App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>Medical Study App</h1>
+            <button id="uploadBtn" class="btn-primary">Upload Documents</button>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar with subjects -->
+            <aside class="sidebar">
+                <h2>Subjects</h2>
+                <div id="subjectsList"></div>
+                <button id="refreshBtn" class="btn-secondary">Refresh</button>
+            </aside>
+
+            <!-- Content area -->
+            <main class="content">
+                <div id="welcomeScreen" class="welcome">
+                    <h2>Welcome to Your Medical Study App</h2>
+                    <p>Upload your lecture materials to get started.</p>
+                    <p>The app will automatically organize them by subject and track your progress through 3 study passes:</p>
+                    <ul>
+                        <li><strong>Pass 1:</strong> Broad overview of main concepts</li>
+                        <li><strong>Pass 2:</strong> Detailed understanding with mechanisms</li>
+                        <li><strong>Pass 3:</strong> Granular, exam-ready knowledge</li>
+                    </ul>
+                </div>
+
+                <div id="lecturesView" class="hidden">
+                    <div class="subject-header">
+                        <h2 id="currentSubject"></h2>
+                    </div>
+                    <div id="lecturesList"></div>
+                </div>
+
+                <div id="studyView" class="hidden">
+                    <div class="study-header">
+                        <button id="backBtn" class="btn-secondary">← Back</button>
+                        <h2 id="studyTitle"></h2>
+                        <div class="pass-selector">
+                            <button class="pass-btn" data-pass="1">Pass 1</button>
+                            <button class="pass-btn" data-pass="2">Pass 2</button>
+                            <button class="pass-btn" data-pass="3">Pass 3</button>
+                        </div>
+                    </div>
+                    <div id="summaryContent" class="summary-content">
+                        <div class="loading">Loading summary...</div>
+                    </div>
+                    <div class="study-footer">
+                        <button id="completeBtn" class="btn-success">Mark Pass Complete</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="../src/renderer.js"></script>
+</body>
+</html>

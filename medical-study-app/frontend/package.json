@@ -1,0 +1,23 @@
+{
+  "name": "medical-study-app",
+  "version": "1.0.0",
+  "description": "Desktop app for medical study material management",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev"
+  },
+  "keywords": [
+    "medical",
+    "study",
+    "electron"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0"
+  },
+  "dependencies": {
+    "marked": "^11.0.0"
+  }
+}
