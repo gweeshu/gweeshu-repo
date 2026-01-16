@@ -1,12 +1,13 @@
+from dotenv import load_dotenv
+
+# Load environment variables FIRST, before other imports
+load_dotenv()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
 import uvicorn
 from models.database import init_db
 from routes.api import router
-
-# Load environment variables
-load_dotenv()
 
 # Initialize database
 init_db()
