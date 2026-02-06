@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Productivity Tracker</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1>Productivity</h1>
+                <span class="date-display" id="today-date"></span>
+            </div>
+            <div class="header-right">
+                <button class="btn-insights" id="btn-insights" title="Get AI Insights">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
+                        <path d="M9 21h6"/><path d="M10 21v1h4v-1"/>
+                    </svg>
+                    Insights
+                </button>
+            </div>
+        </header>
+
+        <!-- Metrics Cards -->
+        <section class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-value" id="metric-today-rate">0%</div>
+                <div class="metric-label">Today</div>
+                <div class="metric-sub" id="metric-today-detail">0/0 tasks</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="metric-streak">0</div>
+                <div class="metric-label">Day Streak</div>
+                <div class="metric-sub" id="metric-streak-best">Best: 0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="metric-7d">0%</div>
+                <div class="metric-label">7-Day Rate</div>
+                <div class="metric-sub" id="metric-30d">30d: 0%</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="metric-best-day">--</div>
+                <div class="metric-label">Best Day</div>
+                <div class="metric-sub" id="metric-best-day-rate">0%</div>
+            </div>
+        </section>
+
+        <!-- Main content -->
+        <div class="main-layout">
+            <!-- Tasks Panel -->
+            <section class="panel tasks-panel">
+                <div class="panel-header">
+                    <h2>Today's Tasks</h2>
+                    <span class="task-count" id="task-count">0</span>
+                </div>
+                <div class="add-task">
+                    <input type="text" id="task-input" placeholder="Add a task..." autocomplete="off">
+                    <button id="btn-add-task" class="btn-add">+</button>
+                </div>
+                <div class="task-list" id="task-list">
+                    <!-- Tasks rendered here -->
+                </div>
+            </section>
+
+            <!-- Charts Panel -->
+            <section class="panel chart-panel">
+                <div class="panel-header">
+                    <h2>30-Day History</h2>
+                    <span class="avg-label" id="avg-rate">Avg: 0%</span>
+                </div>
+                <div class="chart-container" id="chart-container">
+                    <!-- Bars rendered here -->
+                </div>
+                <div class="chart-labels">
+                    <span>30 days ago</span>
+                    <span>Today</span>
+                </div>
+            </section>
+        </div>
+
+        <!-- Per-task rates -->
+        <section class="panel task-rates-panel">
+            <div class="panel-header">
+                <h2>Task Completion Rates</h2>
+                <span class="period-label">Last 30 days</span>
+            </div>
+            <div class="task-rates" id="task-rates">
+                <!-- Per-task bars rendered here -->
+            </div>
+        </section>
+
+        <!-- Day of week -->
+        <section class="panel dow-panel">
+            <div class="panel-header">
+                <h2>Day of Week</h2>
+            </div>
+            <div class="dow-chart" id="dow-chart">
+                <!-- Day of week bars rendered here -->
+            </div>
+        </section>
+
+        <!-- Insights Modal -->
+        <div class="modal-overlay" id="modal-overlay">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2>AI Productivity Insights</h2>
+                    <button class="modal-close" id="modal-close">&times;</button>
+                </div>
+                <div class="modal-body" id="insights-content">
+                    <div class="loading">Analyzing your data...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
